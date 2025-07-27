@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Customer – RETICK</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+  <div class="glass-container">
+    <h1>Buy & Resell Tickets</h1>
+
+    <h2>🎫 Buy New Ticket</h2>
+    <input type="number" placeholder="Event ID" id="buyEventId" />
+    <input type="number" placeholder="Ticket ID" id="buyTicketId" />
+     <button onclick="buyTicket()">Buy €Event Ticket</button>
+
+    <h2>🔁 List Ticket for Resale</h2>
+    <input type="number" placeholder="Event ID" id="resaleEventId" />
+    <input type="number" placeholder="Ticket ID" id="resaleTicketId" />
+    <input type="number" placeholder="Resale Price (ETH)" id="resalePrice" />
+     <button onclick="listForResale()">List Ticket for ReSale</button>
+
+    <h2>🛍 Buy Resold Ticket</h2>
+    <input type="number" placeholder="Event ID" id="resoldEventId" />
+    <input type="number" placeholder="Ticket ID" id="resoldTicketId" />
+    <button onclick="buyResold()">Buy Resold Ticket</button>
+
+    <h2>👁‍🗨 Get Ticket Owner</h2>
+    <input type="number" placeholder="Event ID" id="ownerEventId" />
+    <input type="number" placeholder="Ticket ID" id="ownerTicketId" />
+     <button onclick="getOwner()">Check TicketOwner</button>
+
+  </div>
+
+  <script>
+const contractAddress = "0x1d1f83Ea75AcA690c1D1B5bC0D3303b038ad7cB1";
+const abi = [{"inputs":[{"internalType":"address","name":"_Archie","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"string","name":"eventName","type":"string"},{"indexed":true,"internalType":"uint256","name":"ticketId","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"resalePrice","type":"uint256"}],"name":"TicketListedForResale","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"buyer","type":"address"},{"indexed":true,"internalType":"uint256","name":"eventId","type":"uint256"},{"indexed":true,"internalType":"uint256","name":"ticketId","type":"uint256"}],"name":"TicketPurchased","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"seller","type":"address"},{"indexed":true,"internalType":"address","name":"buyer","type":"address"},{"indexed":false,"internalType":"string","name":"eventName","type":"string"},{"indexed":true,"internalType":"uint256","name":"ticketId","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"price","type":"uint256"}],"name":"TicketResold","type":"event"},{"inputs":[],"name":"Archie","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_eventId","type":"uint256"},{"internalType":"uint256","name":"_ticketId","type":"uint256"}],"name":"buyResaleTicket","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_eventId","type":"uint256"},{"internalType":"uint256","name":"_ticketId","type":"uint256"}],"name":"buyTicket","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_eventId","type":"uint256"},{"internalType":"uint256","name":"_totalTickets","type":"uint256"},{"internalType":"string","name":"_eventName","type":"string"},{"internalType":"uint256","name":"_ticketPrice","type":"uint256"},{"internalType":"uint256","name":"_eventTime","type":"uint256"}],"name":"createEvent","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"events","outputs":[{"internalType":"string","name":"eventName","type":"string"},{"internalType":"uint256","name":"ticketPrice","type":"uint256"},{"internalType":"uint256","name":"maxResellPrice","type":"uint256"},{"internalType":"uint256","name":"totalTickets","type":"uint256"},{"internalType":"uint256","name":"ticketsSold","type":"uint256"},{"internalType":"uint256","name":"eventTime","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_eventId","type":"uint256"},{"internalType":"uint256","name":"_ticketId","type":"uint256"}],"name":"getTicketOwner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_eventId","type":"uint256"},{"internalType":"uint256","name":"_ticketId","type":"uint256"},{"internalType":"uint256","name":"_resalePrice","type":"uint256"}],"name":"listTicketForResale","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"organizer","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"tickets","outputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"bool","name":"forSale","type":"bool"},{"internalType":"uint256","name":"resalePrice","type":"uint256"}],"stateMutability":"view","type":"function"}];
+
+let provider, signer, contract;
+
+async function connect() {
+  if (window.ethereum) {
+    await window.ethereum.request({ method: "eth_requestAccounts" });
+    provider = new ethers.providers.Web3Provider(window.ethereum);
+    signer = provider.getSigner();
+    contract = new ethers.Contract(contractAddress, abi, signer);
+  }
+}
+connect();
+
+// 🎫 Buy Ticket
+async function buyTicket() {
+  const eid = document.getElementById("buyEventId").value;
+  const tid = document.getElementById("buyTicketId").value;
+
+  try {
+    const event = await contract.events(eid);
+    const tx = await contract.buyTicket(eid, tid, {
+      value: event.ticketPrice.toString()
+    });
+    await tx.wait();
+    alert("✅ Ticket purchased successfully");
+  } catch (err) {
+    alert("❌ Error: " + err.message);
+  }
+}
+
+// 🔁 List Ticket for Resale
+async function listForResale() {
+  const eid = document.getElementById("resaleEventId").value;
+  const tid = document.getElementById("resaleTicketId").value;
+  const price = ethers.utils.parseEther(document.getElementById("resalePrice").value);
+
+  try {
+    const tx = await contract.listTicketForResale(eid, tid, price);
+    await tx.wait();
+    alert("✅ Ticket listed for resale");
+  } catch (err) {
+    alert("❌ " + err.message);
+  }
+}
+
+// 🛍 Buy Resold Ticket
+async function buyResold() {
+  const eid = document.getElementById("resoldEventId").value;
+  const tid = document.getElementById("resoldTicketId").value;
+
+  try {
+    const ticket = await contract.tickets(eid, tid);
+    const tx = await contract.buyResaleTicket(eid, tid, {
+      value: ticket.resalePrice.toString()
+    });
+    await tx.wait();
+    alert("✅ Resold ticket purchased");
+  } catch (err) {
+    alert("❌ " + err.message);
+  }
+}
+
+// 👁 Check Ticket Owner
+async function getOwner() {
+  const eid = document.getElementById("ownerEventId").value;
+  const tid = document.getElementById("ownerTicketId").value;
+
+  try {
+    const owner = await contract.getTicketOwner(eid, tid);
+    alert("🎟 Owner: " + owner);
+  } catch (err) {
+    alert("❌ " + err.message);
+  }
+}
+</script>
+
+</body>
+</html>

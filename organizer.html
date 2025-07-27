@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create Event – RETICK</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+  <div class="glass-container">
+    <h1>Create Event</h1>
+    <form id="eventForm">
+      <input type="number" placeholder="Event ID" id="eventId" required />
+      <input type="text" placeholder="Event Name" id="eventName" required />
+      <input type="number" placeholder="Total Tickets" id="totalTickets" required />
+      <input type="number" placeholder="Ticket Price (ETH)" id="ticketPrice" required />
+      <input type="datetime-local" id="eventTime" required />
+      <button type="submit">Create Event</button>
+    </form>
+    <p id="statusMsg"></p>
+  </div>
+
+  <script>
+    document.getElementById('eventForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      document.getElementById('statusMsg').textContent = "🚧 Smart contract interaction will go here...";
+    });
+  </script>
+
+  <script>
+    const walletAddress = localStorage.getItem("walletAddress");
+    if (walletAddress) {
+    // Show as connected or reuse the provider
+        console.log("Connected Wallet: " + walletAddress);
+    }
+    const contractAddress = "0x1d1f83Ea75AcA690c1D1B5bC0D3303b038ad7cB1";
+    const abi = [{"inputs":[{"internalType":"address","name":"_Archie","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"string","name":"eventName","type":"string"},{"indexed":true,"internalType":"uint256","name":"ticketId","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"resalePrice","type":"uint256"}],"name":"TicketListedForResale","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"buyer","type":"address"},{"indexed":true,"internalType":"uint256","name":"eventId","type":"uint256"},{"indexed":true,"internalType":"uint256","name":"ticketId","type":"uint256"}],"name":"TicketPurchased","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"seller","type":"address"},{"indexed":true,"internalType":"address","name":"buyer","type":"address"},{"indexed":false,"internalType":"string","name":"eventName","type":"string"},{"indexed":true,"internalType":"uint256","name":"ticketId","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"price","type":"uint256"}],"name":"TicketResold","type":"event"},{"inputs":[],"name":"Archie","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_eventId","type":"uint256"},{"internalType":"uint256","name":"_ticketId","type":"uint256"}],"name":"buyResaleTicket","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_eventId","type":"uint256"},{"internalType":"uint256","name":"_ticketId","type":"uint256"}],"name":"buyTicket","outputs":[],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"uint256","name":"_eventId","type":"uint256"},{"internalType":"uint256","name":"_totalTickets","type":"uint256"},{"internalType":"string","name":"_eventName","type":"string"},{"internalType":"uint256","name":"_ticketPrice","type":"uint256"},{"internalType":"uint256","name":"_eventTime","type":"uint256"}],"name":"createEvent","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"events","outputs":[{"internalType":"string","name":"eventName","type":"string"},{"internalType":"uint256","name":"ticketPrice","type":"uint256"},{"internalType":"uint256","name":"maxResellPrice","type":"uint256"},{"internalType":"uint256","name":"totalTickets","type":"uint256"},{"internalType":"uint256","name":"ticketsSold","type":"uint256"},{"internalType":"uint256","name":"eventTime","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_eventId","type":"uint256"},{"internalType":"uint256","name":"_ticketId","type":"uint256"}],"name":"getTicketOwner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"_eventId","type":"uint256"},{"internalType":"uint256","name":"_ticketId","type":"uint256"},{"internalType":"uint256","name":"_resalePrice","type":"uint256"}],"name":"listTicketForResale","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"organizer","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"uint256","name":"","type":"uint256"}],"name":"tickets","outputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"bool","name":"forSale","type":"bool"},{"internalType":"uint256","name":"resalePrice","type":"uint256"}],"stateMutability":"view","type":"function"}];
+
+    let provider, signer, contract;
+
+    async function connect() {
+    if (window.ethereum) {
+        await window.ethereum.request({ method: "eth_requestAccounts" });
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = provider.getSigner();
+        contract = new ethers.Contract(contractAddress, abi, signer);
+    }
+    }
+    connect();
+
+    document.getElementById('eventForm').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const id = document.getElementById('eventId').value;
+    const name = document.getElementById('eventName').value;
+    const total = document.getElementById('totalTickets').value;
+    const price = document.getElementById('ticketPrice').value;
+    const time = Math.floor(new Date(document.getElementById('eventTime').value).getTime() / 1000);
+
+    try {
+        const tx = await contract.createEvent(id, total, name, ethers.utils.parseEther(price), time);
+        await tx.wait();
+        document.getElementById('statusMsg').innerText = "✅ Event created successfully!";
+    } catch (err) {
+        console.error(err);
+        document.getElementById('statusMsg').innerText = "❌ Failed: " + err.message;
+    }
+    });
+</script>
+
+</body>
+</html>
